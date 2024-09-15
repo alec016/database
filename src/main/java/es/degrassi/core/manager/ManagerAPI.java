@@ -2,8 +2,10 @@ package es.degrassi.core.manager;
 
 import es.degrassi.Database;
 import es.degrassi.core.builder.entry.EntryBuilder;
+import es.degrassi.util.InvalidDataTypeException;
+import es.degrassi.util.InvalidKeyException;
 import es.degrassi.util.InvalidStateException;
-import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 
@@ -29,11 +31,21 @@ public abstract class ManagerAPI {
     };
   }
 
+  public void create(Creation... creationCallbacks) {
+    Arrays.stream(creationCallbacks).forEach(callback -> {
+      try {
+        createEntry(callback.get());
+      } catch (InvalidStateException | InvalidDataTypeException | InvalidKeyException e) {
+        System.out.println(e.getMessage());
+      }
+    });
+  }
+
   public abstract boolean connect() throws InvalidStateException;
 
   public abstract boolean disconnect() throws InvalidStateException;
 
-  public abstract boolean createEntry(Class<?> entry) throws InvalidStateException;
+  public abstract boolean createEntry(Class<?> entry) throws InvalidStateException, InvalidDataTypeException, InvalidKeyException;
 
   public abstract EntryBuilder entryBuilder();
 

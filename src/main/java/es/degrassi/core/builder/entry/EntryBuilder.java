@@ -1,11 +1,14 @@
 package es.degrassi.core.builder.entry;
 
 import es.degrassi.core.builder.AbstractBuilder;
+import es.degrassi.util.InvalidDataTypeException;
+import es.degrassi.util.InvalidKeyException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import lombok.SneakyThrows;
 
 public abstract class EntryBuilder extends AbstractBuilder {
-  protected EntryBuilder addFiled(Field field) {
+  protected EntryBuilder addField(Field field) throws InvalidDataTypeException, InvalidKeyException {
     return this;
   }
 
@@ -13,8 +16,10 @@ public abstract class EntryBuilder extends AbstractBuilder {
     return this;
   }
 
-  public EntryBuilder addFields(Field... fields) {
-    Arrays.stream(fields).forEach(this::addFiled);
+  public EntryBuilder addFields(Field... fields) throws InvalidDataTypeException, InvalidKeyException {
+    for (Field field : fields) {
+      addField(field);
+    }
     return this;
   }
 

@@ -2,14 +2,16 @@ package es.degrassi.core.manager;
 
 import es.degrassi.Database;
 import es.degrassi.core.builder.entry.TableBuilder;
-import es.degrassi.core.sql.DataType;
-import es.degrassi.core.sql.KeyType;
 import es.degrassi.core.sql.Table;
+import es.degrassi.util.InvalidDataTypeException;
+import es.degrassi.util.InvalidKeyException;
 import es.degrassi.util.InvalidStateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 
 @Getter
@@ -61,60 +63,39 @@ public class SQLManager extends ManagerAPI {
    * @throws InvalidStateException if the object is null or hasn't any fields
    */
   @Override
-  public boolean createEntry(Class<?> entry) throws InvalidStateException {
-    Table table = TableBuilder.fromClass(entry)
-//      .asPrimaryKey("user")
-      .addField("id", DataType.INT, KeyType.AUTOINCREMENT, KeyType.PRIMARY_KEY)
-      .defaultValue("port", 3306)
-      .defaultValue("host", "127.0.0.1")
-      .build();
-    System.out.println("======================================================================================================");
-    System.out.println("Creating table...");
+  public boolean createEntry(Class<?> entry) throws InvalidStateException, InvalidDataTypeException, InvalidKeyException {
+    Table table = TableBuilder.fromClass(entry).build();
+    database.addEntry(entry, table);
+
     try {
       System.out.println(table.prepareCreationIfNotExistsStatement(database.getDbName()));
-      table.createIfNotExists(getDatabase().getDbName());
+      table.createIfNotExists(database.getDbName());
       System.out.println("Table " + table.tableName() + " created successfully");
-    } catch (SQLException exception) {
+    } catch (SQLException | InvalidStateException exception) {
       System.out.println("Can not create table, exists or invalid statement");
     }
-    System.out.println("======================================================================================================");
-    System.out.println("Selecting data...");
-    try {
-      System.out.println(table.prepareSelectStatement(database.getDbName()));
-      System.out.println(table.select(database.getDbName()));
-    } catch(SQLException exception) {
-      System.out.println(exception.getMessage());
-      System.out.println("Can not retrieve data");
-    }
-    System.out.println("======================================================================================================");
-    System.out.println("Inserting data...");
-    System.out.println(table.prepareInsert(database.getDbName(), database));
-    try {
-      System.out.println(table.insert(database.getDbName(), database));
-    } catch(InvalidStateException | SQLException exception) {
-      System.out.println(exception.getMessage());
-      System.out.println("Can not insert data");
-    }
-    System.out.println("======================================================================================================");
-    System.out.println("Deleting data...");
-    System.out.println("======================================================================================================");
-    return false;
+
+    return database.get(entry).isPresent();
   }
 
   @Override
-  public List<?> select(Class<?> type) throws InvalidStateException {
-    Table table = TableBuilder.fromClass(type)
+  public List<?> select(Class<?> type) {
+    AtomicReference<List<?>> list = new AtomicReference<>(new LinkedList<>());
+    database.get(type).ifPresent(table -> {
+      try {
+        list.set(table.select(database.getDbName()));
+      } catch (SQLException | InvalidStateException exception) {
+        System.out.println(exception.getMessage());
+        System.out.println("Cant select data");
+      }
+    });
+//    Table table = TableBuilder.fromClass(type)
 //      .asPrimaryKey("user")
-      .addField("id", DataType.INT, KeyType.AUTOINCREMENT, KeyType.PRIMARY_KEY)
-      .defaultValue("port", 3306)
-      .defaultValue("host", "127.0.0.1")
-      .build();
-    try {
-      return table.select(database.getDbName());
-    } catch (SQLException exception) {
-      System.out.println(exception.getMessage());
-      System.out.println("Cant select data");
-    }
-    return List.of();
+//      .addField("id", DataType.INT, KeyType.AUTOINCREMENT, KeyType.PRIMARY_KEY)
+//      .defaultValue("port", 3306)
+//      .defaultValue("host", "127.0.0.1")
+//      .build();
+
+    return list.get();
   }
 }

@@ -3,18 +3,44 @@ package es.degrassi;
 import es.degrassi.core.DatabaseType;
 import es.degrassi.core.EntryType;
 import es.degrassi.core.manager.ManagerAPI;
+import es.degrassi.core.sql.Table;
+import es.degrassi.core.sql.annotations.AutoIncrement;
+import es.degrassi.core.sql.annotations.Default;
+import es.degrassi.core.sql.annotations.NotNull;
+import es.degrassi.core.sql.annotations.PrimaryKey;
+import es.degrassi.util.InvalidDataTypeException;
+import es.degrassi.util.InvalidKeyException;
 import es.degrassi.util.InvalidStateException;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.Getter;
 
 @Getter
 public class Database {
+  private static final Map<Class<?>, Table> tables = new LinkedHashMap<>();
   private static final String defaultUser = "user", defaultPassword = "pass", defaultDB = "test";
+  @NotNull
+  @Default(defaultUser)
   private final String user;
+  @NotNull
+  @Default(defaultPassword)
   private final String pass;
+  @NotNull
+  @Default("127.0.0.1")
   private final String host;
+  @NotNull
+  @Default(defaultDB)
   private final String dbName;
+  @NotNull
+  @Default("3306")
   private final int port;
+  @NotNull
   private final DatabaseType type;
+  @PrimaryKey
+  @AutoIncrement
+  private final int id = 0;
 
   private final ManagerAPI manager;
 
@@ -108,21 +134,58 @@ public class Database {
     }
   }
 
-  public boolean createEntry(EntryType entryType, Class<?> entry) throws InvalidStateException {
+  public boolean createEntry(EntryType entryType, Class<?> entry) throws InvalidStateException, InvalidDataTypeException, InvalidKeyException {
     if (type.isCompatibleEntry(entryType)) {
       return manager.createEntry(entry);
     }
     return false;
   }
 
+  public void addEntry(Class<?> entryType, Table entry) {
+    tables.put(entryType, entry);
+  }
+
+  public Optional<Table> get(Class<?> entryType) {
+    return Optional.ofNullable(tables.get(entryType));
+  }
+
   public static void main(String[] args) {
-    try {
-      SQLDatabase("libuser", "libUser123", "s6_bungee")
-        .getManager()
-        .createEntry(Database.class);
-    } catch (InvalidStateException e) {
-      System.out.println("Something went wrong: " + e.getMessage());
-    }
+    Database db = SQLDatabase("libuser", "libUser123", "s6_bungee");
+//        .getManager()
+//        .createEntry(Database.class);
+    System.out.println("======================================================================================================");
+    System.out.println("Creating tables...");
+    db.getManager().create(
+      () -> Database.class
+//      () -> TableBuilder.class
+    );
+
+    db.get(Database.class).ifPresent(table -> {
+
+      System.out.println("======================================================================================================");
+      System.out.println("Selecting data...");
+      try {
+        System.out.println(table.prepareSelectStatement(db.getDbName()));
+        System.out.println(table.select(db.getDbName()));
+      } catch(SQLException | InvalidStateException exception) {
+        System.out.println(exception.getMessage());
+        System.out.println("Can not retrieve data");
+      }
+      System.out.println("======================================================================================================");
+      System.out.println("Inserting data...");
+      System.out.println(table.prepareInsert(db.getDbName(), db));
+      try {
+        System.out.println(table.insert(db.getDbName(), db));
+      } catch(InvalidStateException | SQLException exception) {
+        System.out.println(exception.getMessage());
+        System.out.println("Can not insert data");
+      }
+      System.out.println("======================================================================================================");
+      System.out.println("Deleting data...");
+      System.out.println("======================================================================================================");
+      System.out.println();
+    });
+
   }
 
   @Override

@@ -1,10 +1,20 @@
 package es.degrassi.core.builder.entry;
 
-
-import es.degrassi.core.sql.Table;
 import es.degrassi.core.sql.DataType;
 import es.degrassi.core.sql.KeyType;
+import es.degrassi.core.sql.Table;
+import es.degrassi.core.sql.annotations.AutoIncrement;
+import es.degrassi.core.sql.annotations.Default;
+import es.degrassi.core.sql.annotations.ForeingKey;
+import es.degrassi.core.sql.annotations.IncompatibleModifiers;
+import es.degrassi.core.sql.annotations.NotNull;
+import es.degrassi.core.sql.annotations.PrimaryKey;
+import es.degrassi.core.sql.annotations.Unique;
+import es.degrassi.core.sql.annotations.Unsigned;
+import es.degrassi.util.InvalidDataTypeException;
+import es.degrassi.util.InvalidKeyException;
 import es.degrassi.util.InvalidStateException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -17,12 +27,44 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TableBuilder extends EntryBuilder {
   private final HashMap<String, List<String>> cols = new LinkedHashMap<>();
-  private Field lastAdded = null;
   private String tableName;
 
-  public static TableBuilder fromClass(Class<?> clazz) {
+  public static TableBuilder fromClass(Class<?> clazz) throws InvalidDataTypeException, InvalidKeyException {
     TableBuilder builder = new TableBuilder(clazz.getSimpleName());
-    builder.addFields(Arrays.stream(clazz.getDeclaredFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).toArray(Field[]::new));
+    builder
+      .addFields(Arrays
+        .stream(clazz.getDeclaredFields())
+        .filter(field -> Arrays
+          .stream(field.getAnnotations())
+          .anyMatch(annotation -> Arrays
+            .stream(annotation.getClass().getAnnotations())
+            .filter(ann -> ann instanceof IncompatibleModifiers)
+            .map(ann -> (IncompatibleModifiers) ann)
+            .map(IncompatibleModifiers::modifier)
+            .allMatch(modifiers -> {
+              boolean accepts = true;
+              System.out.println("modifiers of " + field.getName() + ": " + Arrays.stream(modifiers).map(Enum::name).toList());
+              for (es.degrassi.core.sql.annotations.Modifier modifier : modifiers) {
+                if (!accepts) return false;
+                switch (modifier) {
+                  case FINAL -> accepts = !Modifier.isFinal(field.getModifiers());
+                  case PUBLIC -> accepts = !Modifier.isPublic(field.getModifiers());
+                  case NATIVE -> accepts = !Modifier.isNative(field.getModifiers());
+                  case STATIC -> accepts = !Modifier.isStatic(field.getModifiers());
+                  case DEFAULT, ABSTRACT -> accepts = !Modifier.isAbstract(field.getModifiers());
+                  case PRIVATE -> accepts = !Modifier.isPrivate(field.getModifiers());
+                  case PROTECTED -> accepts = !Modifier.isProtected(field.getModifiers());
+                  case TRANSIENT -> accepts = !Modifier.isTransient(field.getModifiers());
+                  case VOLATILE -> accepts = !Modifier.isVolatile(field.getModifiers());
+                  case SYNCHRONIZED -> accepts = !Modifier.isSynchronized(field.getModifiers());
+                  case STRICTFP -> accepts = !Modifier.isStrict(field.getModifiers());
+                }
+              }
+              return accepts;
+            })
+          )
+        ).toArray(Field[]::new)
+      );
     return builder;
   }
 
@@ -56,49 +98,67 @@ public class TableBuilder extends EntryBuilder {
     return this;
   }
 
-  @Override
-  protected TableBuilder addFiled(Field field) {
-    this.lastAdded = field;
+  public TableBuilder addField(Field field) throws InvalidDataTypeException, InvalidKeyException {
+    List<String> modifiers = new LinkedList<>();
     DataType dataType = DataType.fromClass(field.getType());
-    if (dataType == null) {
-      lastAdded = null;
-      return this;
-    }
-    List<String> list = new LinkedList<>();
-    if (dataType == DataType.ENUM) {
-      try {
-        String values = Arrays.stream((Enum<?>[]) field.getType().getEnumConstants()).map(Enum::name).map(name -> "\"" + name + "\"").toList()
-          .toString().replaceAll("\\[", "").replaceAll("]", "");
-        list.add(dataType.name() + "(" + values + ")");
-      } catch (ClassCastException e) {
-        System.out.println(e.getMessage());
+    if (dataType == null) return this;
+    if (dataType.isVarchar())
+      modifiers.add(dataType.name() + "(100)");
+    else if (dataType.isEnum() && field.getType().isEnum()) {
+      String values = Arrays
+        .stream((Enum<?>[]) field.getType().getEnumConstants())
+        .map(Enum::name)
+        .map(name -> "\"" + name + "\"")
+        .toList()
+        .toString()
+        .replaceAll("[\\[\\]]", "");
+      modifiers.add(dataType.name() + "(" + values + ")");
+    } else
+      modifiers.add(dataType.name());
+    for (Annotation annotation : field.getAnnotations()) {
+      if (annotation instanceof AutoIncrement) {
+        if (Arrays.stream(AutoIncrement.dataTypes).noneMatch(type -> DataType.fromClass(field.getType()).equals(type)))
+          throw new InvalidDataTypeException(field.getType(), Number.class);
+        modifiers.addAll(modifiers(AutoIncrement.keyTypes));
+      } else if (annotation instanceof PrimaryKey) {
+        if (modifiers.stream().anyMatch(value -> value.contains(KeyType.PRIMARY_KEY.getName())))
+          throw new InvalidKeyException(false, KeyType.PRIMARY_KEY);
+        modifiers.addAll(modifiers(PrimaryKey.keyTypes));
+      } else if (annotation instanceof NotNull) {
+        modifiers.addAll(modifiers(NotNull.keyTypes));
+      } else if (annotation instanceof Unique) {
+        modifiers.addAll(modifiers(Unique.keyTypes));
+      } else if (annotation instanceof Unsigned) {
+        if (Arrays.stream(Unsigned.dataTypes).noneMatch(type -> DataType.fromClass(field.getType()).equals(type)))
+          throw new InvalidDataTypeException(field.getType(), Number.class);
+        modifiers.addAll(modifiers(Unsigned.keyTypes));
+      } else if (annotation instanceof ForeingKey fk) {
+        modifiers.addAll(modifiers(ForeingKey.keyTypes));
+        modifiers.add(fk.table() + "(" + fk.columnName() + ")");
+      } else if (annotation instanceof Default df) {
+        modifiers.addAll(modifiers(Default.keyTypes));
+        if (dataType.isCompatible(String.class) || field.getType().isEnum()) {
+          modifiers.add("\"" + df.value() + "\"");
+        } else {
+          modifiers.add(df.value());
+        }
       }
-    } else if (dataType == DataType.VARCHAR) {
-      list.add(dataType.name() + "(" + 100 + ")");
-    } else {
-      list.add(dataType.name());
     }
-    if (Modifier.isFinal(field.getModifiers())) list.add(KeyType.NOTNULL.getName());
-    addField(field.getName(), list);
+    cols.put(field.getName(), modifiers);
     return this;
   }
 
-  public TableBuilder unsigned() throws InvalidStateException {
-    if (lastAdded == null) throw new InvalidStateException("Can not set unsigned value before add new column");
-    if (!lastAdded.getType().isAssignableFrom(Number.class)) throw new InvalidStateException("Can not set unsigned to a non numeric field");
-    return unsigned(lastAdded.getName());
+  private List<String> modifiers(KeyType... keyTypes) {
+    List<String> list = new LinkedList<>();
+    for (KeyType type : keyTypes)
+      list.add(type.getName());
+    return list;
   }
 
-  public TableBuilder unsigned(String field) throws InvalidStateException{
+  private TableBuilder unsigned(String field) throws InvalidStateException{
     if (cols.get(field).isEmpty()) throw new InvalidStateException("Can not set default value to an empty column definition");
     cols.get(field).add(KeyType.UNSIGNED.getName());
     return this;
-  }
-
-  public <T> TableBuilder defaultValue(T value) throws InvalidStateException {
-    if (lastAdded == null) throw new InvalidStateException("Can not set default value before add new column");
-    if (value.getClass() != lastAdded.getType()) throw new InvalidStateException("Invalid types found, can assign default value " + value + " to a type of " + lastAdded.getType().getSimpleName());
-    return defaultValue(lastAdded.getName(), value);
   }
 
   public <T> TableBuilder defaultValue(String field, T value) throws InvalidStateException {
@@ -119,31 +179,15 @@ public class TableBuilder extends EntryBuilder {
     return this;
   }
 
-  public TableBuilder asPrimaryKey() throws InvalidStateException {
-    if (this.lastAdded == null) throw new InvalidStateException("Can not set Primary Key before add new column");
-    return asPrimaryKey(lastAdded.getName());
-  }
-
   public TableBuilder asPrimaryKey(String col) throws InvalidStateException {
     if (!cols.containsKey(col)) throw new InvalidStateException("Can not set Primary Key to a non existing column");
     cols.get(col).add(KeyType.PRIMARY_KEY.getName());
     return this;
   }
 
-  public TableBuilder notNull() throws InvalidStateException {
-    if (this.lastAdded == null) throw new InvalidStateException("Can not set Not Null before add new column");
-    return notNull(lastAdded.getName());
-  }
-
   public TableBuilder notNull(String col) throws InvalidStateException {
     if (!cols.containsKey(col)) throw new InvalidStateException("Can not set Not Null to a non existing column");
     cols.get(col).add(KeyType.NOT_NULL.getName());
-    return this;
-  }
-
-  public TableBuilder autoincrement() throws InvalidStateException {
-    if (this.lastAdded == null) throw new InvalidStateException("Can not set Autoincrement before add new column");
-    autoincrement(lastAdded.getName());
     return this;
   }
 
@@ -156,11 +200,6 @@ public class TableBuilder extends EntryBuilder {
     return this;
   }
 
-  public TableBuilder foreingKey(String tableReference, String colReference) throws InvalidStateException {
-    if (this.lastAdded == null) throw new InvalidStateException("Can not set Autoincrement before add new column");
-    return foreingKey(lastAdded.getName(), tableReference, colReference);
-  }
-
   public TableBuilder foreingKey(String col, String tableReference, String colReference) throws InvalidStateException {
     if (tableReference.isEmpty() || colReference.isEmpty()) throw new InvalidStateException("Can not reference to an empty tableName or an empty columnName");
     cols.get(col).addAll(List.of(
@@ -171,19 +210,19 @@ public class TableBuilder extends EntryBuilder {
     return this;
   }
 
-  public Table build() throws InvalidStateException {
-    if (tableName == null || tableName.isEmpty()) throw new InvalidStateException("Table name can not be null or empty");
-    if (cols.isEmpty()) throw new InvalidStateException("Columns can not be empty");
-    if (cols.values().stream().noneMatch(value -> value.contains(KeyType.PRIMARY_KEY.getName()))) throw new InvalidStateException("One column must be Primary Key");
-    if (cols.values().stream().filter(value -> value.contains(KeyType.PRIMARY_KEY.getName())).toList().size() > 1) throw new InvalidStateException("Only one column can be Primary Key");
-    return new Table(cols, tableName);
-  }
-
   private boolean containsDataType(String col, DataType... types) {
     AtomicBoolean contains = new AtomicBoolean(false);
     Arrays.stream(types).map(DataType::name).forEach(type -> {
       if (cols.get(col).contains(type)) contains.set(true);
     });
     return contains.get();
+  }
+
+  public Table build() throws InvalidStateException {
+    if (tableName == null || tableName.isEmpty()) throw new InvalidStateException("Table name can not be null or empty");
+    if (cols.isEmpty()) throw new InvalidStateException("Columns can not be empty");
+    if (cols.values().stream().noneMatch(value -> value.contains(KeyType.PRIMARY_KEY.getName()))) throw new InvalidStateException("One column must be Primary Key");
+    if (cols.values().stream().filter(value -> value.contains(KeyType.PRIMARY_KEY.getName())).toList().size() > 1) throw new InvalidStateException("Only one column can be Primary Key");
+    return new Table(cols, tableName);
   }
 }

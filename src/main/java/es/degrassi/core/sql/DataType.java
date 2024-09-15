@@ -31,8 +31,8 @@ public enum DataType {
   BOOLEAN(Boolean.class, boolean.class);
 
   private final Class<?>[] classReference;
-  DataType(Class<?>... classReferece) {
-    this.classReference = classReferece;
+  DataType(Class<?>... classReference) {
+    this.classReference = classReference;
   }
 
   public static DataType fromClass(Class<?> clazz) {
@@ -85,5 +85,13 @@ public enum DataType {
       "name=" + name() +
       ", classReference=" + Arrays.stream(classReference).map(Class::getName).toList() +
       '}';
+  }
+
+  public boolean isVarchar() {
+    return this == VARCHAR;
+  }
+
+  public boolean isEnum() {
+    return this == ENUM;
   }
 }

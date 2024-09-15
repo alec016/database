@@ -2,6 +2,8 @@ package es.degrassi.core.sql;
 
 import es.degrassi.Database;
 import es.degrassi.core.manager.SQLManager;
+import es.degrassi.core.sql.annotations.AutoIncrement;
+import es.degrassi.core.sql.annotations.IncompatibleModifiers;
 import es.degrassi.util.InvalidStateException;
 import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.Modifier;
@@ -124,20 +126,54 @@ public record Table(HashMap<String, List<String>> cols, String tableName) {
 
   private <T> String prepareValues(T object) {
     StringJoiner joiner = new StringJoiner(", ");
-    Arrays.stream(object.getClass().getDeclaredFields()).filter(field -> !Modifier.isStatic(field.getModifiers())).forEach(field -> {
-      if (!cols.containsKey(field.getName())) return;
-      try {
-        field.setAccessible(true);
-        if (field.getType().isAssignableFrom(String.class) || field.getType().isEnum()) {
-          joiner.add("\"" + field.get(object) + "\"");
-        } else {
-          joiner.add(field.get(object) + "");
+    Arrays
+      .stream(object.getClass().getDeclaredFields())
+      .filter(field -> Arrays
+        .stream(field.getAnnotations())
+        .noneMatch(annotation -> annotation instanceof AutoIncrement)
+      ).filter(field -> Arrays
+        .stream(field.getAnnotations())
+        .anyMatch(annotation -> Arrays
+          .stream(annotation.getClass().getAnnotations())
+          .filter(ann -> ann instanceof IncompatibleModifiers)
+          .map(ann -> (IncompatibleModifiers) ann)
+          .map(IncompatibleModifiers::modifier)
+          .allMatch(modifiers -> {
+            boolean accepts = true;
+            System.out.println("modifiers of " + field.getName() + ": " + Arrays.stream(modifiers).map(Enum::name).toList());
+            for (es.degrassi.core.sql.annotations.Modifier modifier : modifiers) {
+              if (!accepts) return false;
+              switch (modifier) {
+                case FINAL -> accepts = !Modifier.isFinal(field.getModifiers());
+                case PUBLIC -> accepts = !Modifier.isPublic(field.getModifiers());
+                case NATIVE -> accepts = !Modifier.isNative(field.getModifiers());
+                case STATIC -> accepts = !Modifier.isStatic(field.getModifiers());
+                case DEFAULT, ABSTRACT -> accepts = !Modifier.isAbstract(field.getModifiers());
+                case PRIVATE -> accepts = !Modifier.isPrivate(field.getModifiers());
+                case PROTECTED -> accepts = !Modifier.isProtected(field.getModifiers());
+                case TRANSIENT -> accepts = !Modifier.isTransient(field.getModifiers());
+                case VOLATILE -> accepts = !Modifier.isVolatile(field.getModifiers());
+                case SYNCHRONIZED -> accepts = !Modifier.isSynchronized(field.getModifiers());
+                case STRICTFP -> accepts = !Modifier.isStrict(field.getModifiers());
+              }
+            }
+            return accepts;
+          })
+        )
+      ).forEach(field -> {
+        if (!cols.containsKey(field.getName())) return;
+        try {
+          field.setAccessible(true);
+          if (field.getType().isAssignableFrom(String.class) || field.getType().isEnum()) {
+            joiner.add("\"" + field.get(object) + "\"");
+          } else {
+            joiner.add(field.get(object) + "");
+          }
+        } catch (IllegalAccessException | InaccessibleObjectException | SecurityException e) {
+          System.out.println(e.getMessage());
+          joiner.add("");
         }
-      } catch (IllegalAccessException | InaccessibleObjectException | SecurityException e) {
-        System.out.println(e.getMessage());
-        joiner.add("");
-      }
-    });
+      });
     return joiner.toString();
   }
 
