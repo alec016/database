@@ -2,6 +2,7 @@ package es.degrassi.core.manager;
 
 import es.degrassi.Database;
 import es.degrassi.core.builder.entry.EntryBuilder;
+import es.degrassi.core.sql.query.Query;
 import es.degrassi.util.InvalidDataTypeException;
 import es.degrassi.util.InvalidKeyException;
 import es.degrassi.util.InvalidStateException;
@@ -9,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.Getter;
 
+@SuppressWarnings("unused")
 @Getter
 public abstract class ManagerAPI {
   protected final Database database;
@@ -39,6 +41,10 @@ public abstract class ManagerAPI {
         System.out.println(e.getMessage());
       }
     });
+  }
+
+  public Query query() {
+    return new Query();
   }
 
   public abstract boolean connect() throws InvalidStateException;

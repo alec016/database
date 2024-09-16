@@ -2,6 +2,7 @@ package es.degrassi.core;
 
 import lombok.Getter;
 
+@SuppressWarnings("unused")
 @Getter
 public enum DatabaseType {
   SQL(3306), MONGO(27017);

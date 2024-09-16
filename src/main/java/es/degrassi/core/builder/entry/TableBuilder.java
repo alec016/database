@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+@SuppressWarnings("unused")
 public class TableBuilder extends EntryBuilder {
   private final HashMap<String, List<String>> cols = new LinkedHashMap<>();
   private String tableName;

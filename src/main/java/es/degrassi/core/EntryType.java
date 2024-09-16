@@ -1,5 +1,6 @@
 package es.degrassi.core;
 
+@SuppressWarnings("unused")
 public enum EntryType {
   TABLE, COLLECTION;
 

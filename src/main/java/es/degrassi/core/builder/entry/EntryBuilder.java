@@ -5,8 +5,8 @@ import es.degrassi.util.InvalidDataTypeException;
 import es.degrassi.util.InvalidKeyException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import lombok.SneakyThrows;
 
+@SuppressWarnings("unused")
 public abstract class EntryBuilder extends AbstractBuilder {
   protected EntryBuilder addField(Field field) throws InvalidDataTypeException, InvalidKeyException {
     return this;

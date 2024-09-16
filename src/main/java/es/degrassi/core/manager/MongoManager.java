@@ -11,6 +11,7 @@ import es.degrassi.core.builder.entry.CollectionBuilder;
 import es.degrassi.util.InvalidStateException;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public class MongoManager extends ManagerAPI {
   private static final Gson GSON = new GsonBuilder()
     .serializeNulls()

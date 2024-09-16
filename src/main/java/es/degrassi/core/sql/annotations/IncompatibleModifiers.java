@@ -6,6 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+@SuppressWarnings("unused")
 @Documented
 @Retention(RetentionPolicy.CLASS)
 @Target({ ElementType.ANNOTATION_TYPE})

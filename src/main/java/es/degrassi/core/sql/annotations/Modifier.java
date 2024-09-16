@@ -14,7 +14,7 @@ public enum Modifier {
   NATIVE,
   STRICTFP;
 
-  private Modifier() {
+  Modifier() {
   }
 
   public boolean isStatic() {

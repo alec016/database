@@ -8,6 +8,7 @@ import es.degrassi.core.sql.annotations.AutoIncrement;
 import es.degrassi.core.sql.annotations.Default;
 import es.degrassi.core.sql.annotations.NotNull;
 import es.degrassi.core.sql.annotations.PrimaryKey;
+import es.degrassi.core.sql.query.Query;
 import es.degrassi.util.InvalidDataTypeException;
 import es.degrassi.util.InvalidKeyException;
 import es.degrassi.util.InvalidStateException;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("unused")
 public class Database {
   private static final Map<Class<?>, Table> tables = new LinkedHashMap<>();
   private static final String defaultUser = "user", defaultPassword = "pass", defaultDB = "test";
@@ -165,17 +167,41 @@ public class Database {
       System.out.println("======================================================================================================");
       System.out.println("Selecting data...");
       try {
-        System.out.println(table.prepareSelectStatement(db.getDbName()));
-        System.out.println(table.select(db.getDbName()));
-      } catch(SQLException | InvalidStateException exception) {
-        System.out.println(exception.getMessage());
+        Query query = db.getManager()
+          .query()
+          .select()
+          .all()
+          .from()
+          .table(db.getClass().getSimpleName())
+          .where()
+          .create()
+          .firstMember("port")
+          .gte()
+          .secondMember(3306)
+          .build()
+          .and()
+          .firstMember("host")
+          .eq()
+          .secondMember("127.0.0.1")
+          .build()
+          .build();
+        System.out.println(query.build());
+        System.out.println(table.selectWithQuery(query));
+      } catch (InvalidStateException | SQLException e) {
+        System.out.println(e.getMessage());
         System.out.println("Can not retrieve data");
       }
       System.out.println("======================================================================================================");
       System.out.println("Inserting data...");
-      System.out.println(table.prepareInsert(db.getDbName(), db));
       try {
-        System.out.println(table.insert(db.getDbName(), db));
+        Query query = db.getManager()
+          .query()
+          .insert()
+          .table(db.getClass().getSimpleName())
+          .columns(table.prepareColsForInsert())
+          .values(table.prepareValues(db));
+        System.out.println(query.build());
+        System.out.println(table.insertWithQuery(query));
       } catch(InvalidStateException | SQLException exception) {
         System.out.println(exception.getMessage());
         System.out.println("Can not insert data");

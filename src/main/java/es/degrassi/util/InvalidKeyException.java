@@ -2,6 +2,7 @@ package es.degrassi.util;
 
 import es.degrassi.core.sql.KeyType;
 
+@SuppressWarnings("unused")
 public class InvalidKeyException extends Exception {
   public InvalidKeyException(boolean accepts, KeyType type) {
     super(

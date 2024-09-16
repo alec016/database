@@ -2,6 +2,7 @@ package es.degrassi.core.sql;
 
 import lombok.Getter;
 
+@SuppressWarnings("unused")
 @Getter
 public enum KeyType {
   PRIMARY_KEY("PRIMARY KEY"),

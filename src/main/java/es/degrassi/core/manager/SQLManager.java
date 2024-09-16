@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 
+@SuppressWarnings("unused")
 @Getter
 public class SQLManager extends ManagerAPI {
   private Connection connection = null;
@@ -89,13 +90,6 @@ public class SQLManager extends ManagerAPI {
         System.out.println("Cant select data");
       }
     });
-//    Table table = TableBuilder.fromClass(type)
-//      .asPrimaryKey("user")
-//      .addField("id", DataType.INT, KeyType.AUTOINCREMENT, KeyType.PRIMARY_KEY)
-//      .defaultValue("port", 3306)
-//      .defaultValue("host", "127.0.0.1")
-//      .build();
-
     return list.get();
   }
 }

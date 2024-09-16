@@ -4,6 +4,7 @@ import es.degrassi.Database;
 import es.degrassi.core.manager.SQLManager;
 import es.degrassi.core.sql.annotations.AutoIncrement;
 import es.degrassi.core.sql.annotations.IncompatibleModifiers;
+import es.degrassi.core.sql.query.Query;
 import es.degrassi.util.InvalidStateException;
 import java.lang.reflect.InaccessibleObjectException;
 import java.lang.reflect.Modifier;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.StringJoiner;
 
+@SuppressWarnings("unused")
 public record Table(HashMap<String, List<String>> cols, String tableName) {
 
   public <T> boolean insert(String dbName, T object) throws InvalidStateException, SQLException {
@@ -29,12 +31,58 @@ public record Table(HashMap<String, List<String>> cols, String tableName) {
     Database.instance.close();
     return false;
   }
+  public boolean insertWithQuery(Query query) throws InvalidStateException, SQLException {
+    Database.instance.init();
+    if (Database.instance.getManager() instanceof SQLManager manager) {
+      boolean success = !manager.getConnection().prepareStatement(query.build()).execute();
+      Database.instance.close();
+      return success;
+    }
+    Database.instance.close();
+    return false;
+  }
 
   public List<?> select(String dbName) throws InvalidStateException, SQLException {
     List<Object> list = new LinkedList<>();
     Database.instance.init();
     if (Database.instance.getManager() instanceof SQLManager manager) {
       ResultSet rs = manager.getConnection().prepareStatement(prepareSelectAllStatement(dbName)).executeQuery();
+      while(rs.next()) {
+        List<Object> values = new LinkedList<>();
+        for (String col : cols.keySet()) {
+          String modified = this.cols.get(col).get(0).toUpperCase(Locale.ROOT);
+          if (modified.contains("(")) modified = modified.substring(0, modified.indexOf("("));
+          Object object = switch(modified) {
+            case "INT", "MEDIUMINT" -> rs.getInt(col);
+            case "VARCHAR", "TEXT", "SET", "ENUM" -> rs.getString(col);
+            case "DECIMAL", "TINYDECIMAL", "MEDIUMDECIMAL", "LONGDECIMAL" -> rs.getDouble(col);
+            case "DATE" -> rs.getDate(col);
+            case "TIMESTAMP" -> new Date(rs.getTimestamp(col).getTime());
+            case "TINYINT", "SMALLINT" -> rs.getShort(col);
+            case "LONGINT" -> rs.getLong(col);
+            case "BLOB" -> rs.getBlob(col); // see what class fits better
+            case "DATETIME" -> new Date(rs.getTime(col).getTime());
+            case "CHAR" -> rs.getString(col).charAt(0);
+            case "FLOAT" -> rs.getFloat(col);
+            case "BOOLEAN" -> rs.getBoolean(col);
+//              case "GEOMETRY" -> rs.get; // see what class fits better
+//              case "YEAR" -> rs.get; // see what class fits better
+            default -> throw new IllegalStateException("Unexpected value: " + modified);
+          };
+          values.add(object);
+        }
+        list.add(values);
+      }
+    }
+    Database.instance.close();
+    return list;
+  }
+
+  public List<Object> selectWithQuery(Query query) throws InvalidStateException, SQLException {
+    List<Object> list = new LinkedList<>();
+    Database.instance.init();
+    if (Database.instance.getManager() instanceof SQLManager manager) {
+      ResultSet rs = manager.getConnection().prepareStatement(query.build()).executeQuery();
       while(rs.next()) {
         List<Object> values = new LinkedList<>();
         for (String col : cols.keySet()) {
@@ -124,7 +172,7 @@ public record Table(HashMap<String, List<String>> cols, String tableName) {
     return "INSERT INTO " + dbName + "." + tableName + " (" + prepareColsForInsert() + ") VALUES (" + prepareValues(object) + ")";
   }
 
-  private <T> String prepareValues(T object) {
+  public <T> String prepareValues(T object) {
     StringJoiner joiner = new StringJoiner(", ");
     Arrays
       .stream(object.getClass().getDeclaredFields())
@@ -177,7 +225,7 @@ public record Table(HashMap<String, List<String>> cols, String tableName) {
     return joiner.toString();
   }
 
-  private String prepareColsForInsert() {
+  public String prepareColsForInsert() {
     StringBuilder builder = new StringBuilder();
     StringJoiner joiner = new StringJoiner(", ");
     cols.forEach((key, value) -> {
@@ -189,7 +237,7 @@ public record Table(HashMap<String, List<String>> cols, String tableName) {
     return builder.toString();
   }
 
-  private String prepareCols() {
+  public String prepareCols() {
     StringBuilder builder = new StringBuilder();
     StringJoiner j = new StringJoiner(", ");
     cols.entrySet().stream().map(entry -> {

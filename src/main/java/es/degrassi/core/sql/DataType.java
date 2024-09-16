@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+@SuppressWarnings("unused")
 public enum DataType {
   VARCHAR(String.class),
   INT(Integer.class, int.class),
