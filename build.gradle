@@ -4,7 +4,7 @@ plugins {
     id "maven-publish"
 }
 
-group = project.maven_group
+//group = project.maven_group
 version = project.lib_version
 
 repositories {
