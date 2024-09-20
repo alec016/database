@@ -4,7 +4,7 @@ plugins {
     id "maven-publish"
 }
 
-//group = project.maven_group
+group = project.maven_group
 version = project.lib_version
 
 repositories {
@@ -23,8 +23,8 @@ dependencies {
 publishing {
     repositories {
         maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/alec016/database")
+            name = "database"
+            url = uri("https://maven.pkg.github.com/alec016")
             credentials {
                 username = project.findProperty("ghp.user") ?: System.getenv("MAVEN_USERNAME")
                 password = project.findProperty("ghp.key") ?: System.getenv("MAVEN_TOKEN")
