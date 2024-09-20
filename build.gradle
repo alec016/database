@@ -5,6 +5,7 @@ plugins {
 }
 
 group = project.maven_group
+archivesBaseName = project.archives_name
 version = project.lib_version
 
 repositories {
@@ -23,8 +24,8 @@ dependencies {
 publishing {
     repositories {
         maven {
-            name = "database"
-            url = uri("https://maven.pkg.github.com/alec016")
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/alec016/database")
             credentials {
                 username = project.findProperty("ghp.user") ?: System.getenv("MAVEN_USERNAME")
                 password = project.findProperty("ghp.key") ?: System.getenv("MAVEN_TOKEN")
@@ -34,6 +35,9 @@ publishing {
     publications {
         gpr(MavenPublication) {
             from(components.java)
+            pom {
+                url.set("https://github.com/alec016/database.git")
+            }
         }
     }
 }
