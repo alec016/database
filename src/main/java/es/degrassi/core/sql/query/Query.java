@@ -22,6 +22,16 @@ public class Query {
     return new SelectQuery(this);
   }
 
+  public UpdateQuery update() {
+    query.add("UPDATE");
+    return new UpdateQuery(this);
+  }
+
+  public DeleteQuery delete() {
+    query.add("DELETE FROM");
+    return new DeleteQuery(this);
+  }
+
   public TableQuery from() {
     query.add("FROM");
     return new TableQuery(this);

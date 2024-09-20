@@ -1,6 +1,7 @@
 package es.degrassi.core.sql.query;
 
 import es.degrassi.Database;
+import es.degrassi.core.sql.annotations.modifier.Table;
 import es.degrassi.util.InvalidStateException;
 import java.util.Arrays;
 import java.util.StringJoiner;
@@ -21,8 +22,8 @@ public class InsertQuery {
   }
 
   public InsertQuery table(Class<?> table) throws InvalidStateException {
-    if (table == null || table.getAnnotation(es.degrassi.core.sql.annotations.modifier.Table.class) == null) throw new InvalidStateException("Table name can not be null or empty");
-    query.query.add(Database.instance.getDbName() + "." + table.getAnnotation(es.degrassi.core.sql.annotations.modifier.Table.class));
+    if (table == null || table.getAnnotation(Table.class) == null) throw new InvalidStateException("Table name can not be null or empty");
+    query.query.add(Database.instance.getDbName() + "." + table.getAnnotation(Table.class).value());
     return this;
   }
 

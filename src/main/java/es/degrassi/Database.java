@@ -181,6 +181,7 @@ public class Database {
 //      () -> TableBuilder.class
     );
 
+    System.out.println("Created tables");
     db.get(Database.class).ifPresent(table -> {
       System.out.println("======================================================================================================");
       System.out.println("Selecting data...");
@@ -209,25 +210,70 @@ public class Database {
         System.out.println(e.getMessage());
         System.out.println("Can not retrieve data");
       }
+      System.out.println("Selected data");
       System.out.println("======================================================================================================");
       System.out.println("Inserting data...");
-      try {
-        Query query = db.getManager()
-          .query()
-          .insert()
-          .table(db.getClass())
-          .columns(table.prepareColsForInsert())
-          .values(table.prepareValues(db));
-        System.out.println(query.build());
-        System.out.println(table.insertWithQuery(query));
-      } catch(InvalidStateException | SQLException exception) {
-        System.out.println(exception.getMessage());
-        System.out.println("Can not insert data");
-      }
+//      try {
+//        Query query = db.getManager()
+//          .query()
+//          .insert()
+//          .table(db.getClass())
+//          .columns(table.prepareColsForInsert())
+//          .values(table.prepareValues(db));
+//        System.out.println(query.build());
+//        System.out.println(table.insertWithQuery(query));
+//      } catch(InvalidStateException | SQLException exception) {
+//        System.out.println(exception.getMessage());
+//        System.out.println("Can not insert data");
+//      }
+      System.out.println("Inserted data");
+      System.out.println("======================================================================================================");
+      System.out.println("Updating data...");
+//      try {
+//        Query query = db.getManager()
+//          .query()
+//          .update()
+//          .table(db.getClass())
+//          .set()
+//          .set("host", "localhost")
+//          .set("port", 3307)
+//          .build()
+//          .where()
+//          .create()
+//          .firstMember("id")
+//          .eq()
+//          .secondMember(2)
+//          .build()
+//          .build();
+//        System.out.println(query.build());
+//        System.out.println(table.insertWithQuery(query));
+//      } catch(InvalidStateException | SQLException exception) {
+//        System.out.println(exception.getMessage());
+//        System.out.println("Can not update data");
+//      }
+      System.out.println("Updated data");
       System.out.println("======================================================================================================");
       System.out.println("Deleting data...");
+//      try {
+//        Query query = db.getManager()
+//          .query()
+//          .delete()
+//          .table(db.getClass())
+//          .where()
+//          .create()
+//          .firstMember("id")
+//          .eq()
+//          .secondMember(2)
+//          .build()
+//          .build();
+//        System.out.println(query.build());
+//        System.out.println(table.insertWithQuery(query));
+//      } catch(InvalidStateException | SQLException exception) {
+//        System.out.println(exception.getMessage());
+//        System.out.println("Can not delete data");
+//      }
+      System.out.println("Deleted data");
       System.out.println("======================================================================================================");
-      System.out.println();
     });
 
   }
