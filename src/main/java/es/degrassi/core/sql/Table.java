@@ -2,8 +2,8 @@ package es.degrassi.core.sql;
 
 import es.degrassi.Database;
 import es.degrassi.core.manager.SQLManager;
-import es.degrassi.core.sql.annotations.AutoIncrement;
-import es.degrassi.core.sql.annotations.IncompatibleModifiers;
+import es.degrassi.core.sql.annotations.modifier.AutoIncrement;
+import es.degrassi.core.sql.annotations.modifier.IncompatibleModifiers;
 import es.degrassi.core.sql.query.Query;
 import es.degrassi.util.InvalidStateException;
 import java.lang.reflect.InaccessibleObjectException;
@@ -189,7 +189,7 @@ public record Table(HashMap<String, List<String>> cols, String tableName) {
           .allMatch(modifiers -> {
             boolean accepts = true;
             System.out.println("modifiers of " + field.getName() + ": " + Arrays.stream(modifiers).map(Enum::name).toList());
-            for (es.degrassi.core.sql.annotations.Modifier modifier : modifiers) {
+            for (es.degrassi.core.sql.annotations.modifier.Modifier modifier : modifiers) {
               if (!accepts) return false;
               switch (modifier) {
                 case FINAL -> accepts = !Modifier.isFinal(field.getModifiers());

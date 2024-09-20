@@ -1,4 +1,4 @@
-package es.degrassi.core.sql.annotations;
+package es.degrassi.core.sql.annotations.modifier;
 
 public enum Modifier {
   PUBLIC,

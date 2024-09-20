@@ -1,4 +1,4 @@
-package es.degrassi.core.sql.annotations;
+package es.degrassi.core.sql.annotations.modifier;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

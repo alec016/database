@@ -4,10 +4,14 @@ import es.degrassi.core.DatabaseType;
 import es.degrassi.core.EntryType;
 import es.degrassi.core.manager.ManagerAPI;
 import es.degrassi.core.sql.Table;
-import es.degrassi.core.sql.annotations.AutoIncrement;
-import es.degrassi.core.sql.annotations.Default;
-import es.degrassi.core.sql.annotations.NotNull;
-import es.degrassi.core.sql.annotations.PrimaryKey;
+import es.degrassi.core.sql.annotations.modifier.AutoIncrement;
+import es.degrassi.core.sql.annotations.modifier.Column;
+import es.degrassi.core.sql.annotations.modifier.Default;
+import es.degrassi.core.sql.annotations.modifier.NotNull;
+import es.degrassi.core.sql.annotations.modifier.PrimaryKey;
+import es.degrassi.core.sql.annotations.type.Enum;
+import es.degrassi.core.sql.annotations.type.Int;
+import es.degrassi.core.sql.annotations.type.Varchar;
 import es.degrassi.core.sql.query.Query;
 import es.degrassi.util.InvalidDataTypeException;
 import es.degrassi.util.InvalidKeyException;
@@ -20,28 +24,43 @@ import lombok.Getter;
 
 @Getter
 @SuppressWarnings("unused")
+@es.degrassi.core.sql.annotations.modifier.Table("newdatabase")
 public class Database {
   private static final Map<Class<?>, Table> tables = new LinkedHashMap<>();
   private static final String defaultUser = "user", defaultPassword = "pass", defaultDB = "test";
   @NotNull
   @Default(defaultUser)
+  @Column("user")
+  @Varchar
   private final String user;
   @NotNull
   @Default(defaultPassword)
+  @Column("pass")
+  @Varchar
   private final String pass;
   @NotNull
   @Default("127.0.0.1")
+  @Column("host")
+  @Varchar
   private final String host;
   @NotNull
   @Default(defaultDB)
+  @Column("dbName")
+  @Varchar
   private final String dbName;
   @NotNull
   @Default("3306")
+  @Column("port")
+  @Int
   private final int port;
   @NotNull
+  @Column("type")
+  @Enum
   private final DatabaseType type;
   @PrimaryKey
   @AutoIncrement
+  @Column("id")
+  @Int
   private final int id = 0;
 
   private final ManagerAPI manager;
@@ -172,7 +191,7 @@ public class Database {
           .select()
           .all()
           .from()
-          .table(db.getClass().getSimpleName())
+          .table(db.getClass().getAnnotation(es.degrassi.core.sql.annotations.modifier.Table.class).value())
           .where()
           .create()
           .firstMember("port")
@@ -197,7 +216,7 @@ public class Database {
         Query query = db.getManager()
           .query()
           .insert()
-          .table(db.getClass().getSimpleName())
+          .table(db.getClass().getAnnotation(es.degrassi.core.sql.annotations.modifier.Table.class).value())
           .columns(table.prepareColsForInsert())
           .values(table.prepareValues(db));
         System.out.println(query.build());

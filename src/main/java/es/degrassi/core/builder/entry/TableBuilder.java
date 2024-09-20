@@ -3,14 +3,33 @@ package es.degrassi.core.builder.entry;
 import es.degrassi.core.sql.DataType;
 import es.degrassi.core.sql.KeyType;
 import es.degrassi.core.sql.Table;
-import es.degrassi.core.sql.annotations.AutoIncrement;
-import es.degrassi.core.sql.annotations.Default;
-import es.degrassi.core.sql.annotations.ForeingKey;
-import es.degrassi.core.sql.annotations.IncompatibleModifiers;
-import es.degrassi.core.sql.annotations.NotNull;
-import es.degrassi.core.sql.annotations.PrimaryKey;
-import es.degrassi.core.sql.annotations.Unique;
-import es.degrassi.core.sql.annotations.Unsigned;
+import es.degrassi.core.sql.annotations.modifier.AutoIncrement;
+import es.degrassi.core.sql.annotations.modifier.Column;
+import es.degrassi.core.sql.annotations.modifier.Default;
+import es.degrassi.core.sql.annotations.modifier.ForeingKey;
+import es.degrassi.core.sql.annotations.modifier.IncompatibleModifiers;
+import es.degrassi.core.sql.annotations.modifier.NotNull;
+import es.degrassi.core.sql.annotations.modifier.PrimaryKey;
+import es.degrassi.core.sql.annotations.modifier.Unique;
+import es.degrassi.core.sql.annotations.modifier.Unsigned;
+import es.degrassi.core.sql.annotations.type.Boolean;
+import es.degrassi.core.sql.annotations.type.Char;
+import es.degrassi.core.sql.annotations.type.ColumnType;
+import es.degrassi.core.sql.annotations.type.Date;
+import es.degrassi.core.sql.annotations.type.DateTime;
+import es.degrassi.core.sql.annotations.type.Decimal;
+import es.degrassi.core.sql.annotations.type.Enum;
+import es.degrassi.core.sql.annotations.type.Float;
+import es.degrassi.core.sql.annotations.type.Int;
+import es.degrassi.core.sql.annotations.type.LongDecimal;
+import es.degrassi.core.sql.annotations.type.LongInt;
+import es.degrassi.core.sql.annotations.type.MediumDecimal;
+import es.degrassi.core.sql.annotations.type.MediumInt;
+import es.degrassi.core.sql.annotations.type.Set;
+import es.degrassi.core.sql.annotations.type.Timestamp;
+import es.degrassi.core.sql.annotations.type.TinyDecimal;
+import es.degrassi.core.sql.annotations.type.TinyInt;
+import es.degrassi.core.sql.annotations.type.Varchar;
 import es.degrassi.util.InvalidDataTypeException;
 import es.degrassi.util.InvalidKeyException;
 import es.degrassi.util.InvalidStateException;
@@ -31,7 +50,12 @@ public class TableBuilder extends EntryBuilder {
   private String tableName;
 
   public static TableBuilder fromClass(Class<?> clazz) throws InvalidDataTypeException, InvalidKeyException {
-    TableBuilder builder = new TableBuilder(clazz.getSimpleName());
+    es.degrassi.core.sql.annotations.modifier.Table table = clazz.getAnnotation(es.degrassi.core.sql.annotations.modifier.Table.class);
+    TableBuilder builder;
+    if (table == null)
+      builder = new TableBuilder(clazz.getSimpleName());
+    else
+      builder = new TableBuilder(table.value());
     builder
       .addFields(Arrays
         .stream(clazz.getDeclaredFields())
@@ -44,8 +68,8 @@ public class TableBuilder extends EntryBuilder {
             .map(IncompatibleModifiers::modifier)
             .allMatch(modifiers -> {
               boolean accepts = true;
-              System.out.println("modifiers of " + field.getName() + ": " + Arrays.stream(modifiers).map(Enum::name).toList());
-              for (es.degrassi.core.sql.annotations.Modifier modifier : modifiers) {
+              System.out.println("modifiers of " + field.getName() + ": " + Arrays.stream(modifiers).map(java.lang.Enum::name).toList());
+              for (es.degrassi.core.sql.annotations.modifier.Modifier modifier : modifiers) {
                 if (!accepts) return false;
                 switch (modifier) {
                   case FINAL -> accepts = !Modifier.isFinal(field.getModifiers());
@@ -101,21 +125,54 @@ public class TableBuilder extends EntryBuilder {
 
   public TableBuilder addField(Field field) throws InvalidDataTypeException, InvalidKeyException {
     List<String> modifiers = new LinkedList<>();
-    DataType dataType = DataType.fromClass(field.getType());
-    if (dataType == null) return this;
-    if (dataType.isVarchar())
-      modifiers.add(dataType.name() + "(100)");
-    else if (dataType.isEnum() && field.getType().isEnum()) {
-      String values = Arrays
-        .stream((Enum<?>[]) field.getType().getEnumConstants())
-        .map(Enum::name)
-        .map(name -> "\"" + name + "\"")
-        .toList()
-        .toString()
-        .replaceAll("[\\[\\]]", "");
-      modifiers.add(dataType.name() + "(" + values + ")");
-    } else
-      modifiers.add(dataType.name());
+    AtomicReference<Annotation> columnType = new AtomicReference<>(null);
+    Arrays.stream(field.getAnnotations()).filter(annotation -> ColumnType.isValid(annotation.annotationType())).findFirst()
+      .ifPresent(annotation -> {
+        columnType.set(annotation);
+        if (annotation instanceof Boolean a) modifiers.add(a.toString);
+        else if (annotation instanceof Char a) modifiers.add(a.toString);
+        else if (annotation instanceof Date a) modifiers.add(a.toString);
+        else if (annotation instanceof DateTime a) modifiers.add(a.toString);
+        else if (annotation instanceof Decimal a) modifiers.add(a.toString);
+        else if (annotation instanceof Enum a)
+          if (a.value().length > 0)
+            modifiers.add(a.toString.replace("%s%", Arrays.toString(a.value()).replaceAll("[\\[\\]]", "")));
+          else
+            modifiers.add(a.toString.replace("%s%", Arrays
+              .stream((java.lang.Enum<?>[]) field.getType().getEnumConstants())
+              .map(java.lang.Enum::name)
+              .map(name -> "\"" + name + "\"")
+              .toList()
+              .toString()
+              .replaceAll("[\\[\\]]", "")));
+        else if (annotation instanceof Float a) modifiers.add(a.toString);
+        else if (annotation instanceof Int a) modifiers.add(a.toString);
+        else if (annotation instanceof LongDecimal a) modifiers.add(a.toString);
+        else if (annotation instanceof LongInt a) modifiers.add(a.toString);
+        else if (annotation instanceof MediumDecimal a) modifiers.add(a.toString);
+        else if (annotation instanceof MediumInt a) modifiers.add(a.toString);
+        else if (annotation instanceof Set a) modifiers.add(a.toString.replace("%s%", Arrays.toString(a.value())).replaceAll("[\\[\\]]", ""));
+        else if (annotation instanceof Timestamp a) modifiers.add(a.toString);
+        else if (annotation instanceof TinyDecimal a) modifiers.add(a.toString);
+        else if (annotation instanceof TinyInt a) modifiers.add(a.toString);
+        else if (annotation instanceof Varchar a) modifiers.add(a.toString.replace("%s%", a.value() + ""));
+      });
+    if (columnType.get() == null || modifiers.isEmpty()) return this;
+//    DataType dataType = DataType.fromClass(field.getType());
+//    if (dataType == null) return this;
+//    if (dataType.isVarchar())
+//      modifiers.add(dataType.name() + "(100)");
+//    else if (dataType.isEnum() && field.getType().isEnum()) {
+//      String values = Arrays
+//        .stream((java.lang.Enum<?>[]) field.getType().getEnumConstants())
+//        .map(java.lang.Enum::name)
+//        .map(name -> "\"" + name + "\"")
+//        .toList()
+//        .toString()
+//        .replaceAll("[\\[\\]]", "");
+//      modifiers.add(dataType.name() + "(" + values + ")");
+//    } else
+//      modifiers.add(dataType.name());
     for (Annotation annotation : field.getAnnotations()) {
       if (annotation instanceof AutoIncrement) {
         if (Arrays.stream(AutoIncrement.dataTypes).noneMatch(type -> DataType.fromClass(field.getType()).equals(type)))
@@ -129,23 +186,19 @@ public class TableBuilder extends EntryBuilder {
         modifiers.addAll(modifiers(NotNull.keyTypes));
       } else if (annotation instanceof Unique) {
         modifiers.addAll(modifiers(Unique.keyTypes));
-      } else if (annotation instanceof Unsigned) {
-        if (Arrays.stream(Unsigned.dataTypes).noneMatch(type -> DataType.fromClass(field.getType()).equals(type)))
-          throw new InvalidDataTypeException(field.getType(), Number.class);
-        modifiers.addAll(modifiers(Unsigned.keyTypes));
       } else if (annotation instanceof ForeingKey fk) {
         modifiers.addAll(modifiers(ForeingKey.keyTypes));
         modifiers.add(fk.table() + "(" + fk.columnName() + ")");
       } else if (annotation instanceof Default df) {
         modifiers.addAll(modifiers(Default.keyTypes));
-        if (dataType.isCompatible(String.class) || field.getType().isEnum()) {
+        if (ColumnType.mustBeQuotated(columnType.get().annotationType())) {
           modifiers.add("\"" + df.value() + "\"");
         } else {
           modifiers.add(df.value());
         }
       }
     }
-    cols.put(field.getName(), modifiers);
+    cols.put(field.getAnnotation(Column.class).value(), modifiers);
     return this;
   }
 

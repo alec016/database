@@ -13,7 +13,7 @@ public enum DataType {
   DECIMAL(Double.class, double.class),
   DATE(Date.class),
   TIMESTAMP(Date.class),
-  TINYINT(Short.class, short.class),
+  TINYINT(Byte.class, byte.class),
   MEDIUMINT(Integer.class, int.class),
   LONGINT(Long.class, long.class),
   TINYDECIMAL(Double.class, double.class),
@@ -49,6 +49,7 @@ public enum DataType {
 
   public static DataType from(String dataType) {
     if (dataType.toUpperCase(Locale.ROOT).startsWith("VARCHAR")) return VARCHAR;
+    if (dataType.toUpperCase(Locale.ROOT).startsWith("ENUM")) return ENUM;
     return switch(dataType.toUpperCase(Locale.ROOT)) {
       case "INT" -> INT;
       case "DECIMAL" -> DECIMAL;

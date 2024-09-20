@@ -1,4 +1,4 @@
-package es.degrassi.core.sql.annotations;
+package es.degrassi.core.sql.annotations.modifier;
 
 import es.degrassi.core.sql.DataType;
 import es.degrassi.core.sql.KeyType;
@@ -11,22 +11,11 @@ import java.lang.annotation.Target;
 @SuppressWarnings("unused")
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD, ElementType.RECORD_COMPONENT})
+@Target({ElementType.FIELD, ElementType.RECORD_COMPONENT})
 @IncompatibleModifiers(modifier = { Modifier.STATIC })
-public @interface Unsigned {
+public @interface PrimaryKey {
   KeyType[] keyTypes = new KeyType[] {
-    KeyType.UNSIGNED
+    KeyType.PRIMARY_KEY
   };
-  DataType[] dataTypes = new DataType[] {
-    DataType.INT,
-    DataType.SMALLINT,
-    DataType.LONGDECIMAL,
-    DataType.MEDIUMDECIMAL,
-    DataType.TINYDECIMAL,
-    DataType.LONGINT,
-    DataType.MEDIUMINT,
-    DataType.TINYINT,
-    DataType.DECIMAL,
-    DataType.FLOAT
-  };
+  DataType[] dataTypes = DataType.values();
 }

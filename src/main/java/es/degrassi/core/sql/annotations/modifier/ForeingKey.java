@@ -1,4 +1,4 @@
-package es.degrassi.core.sql.annotations;
+package es.degrassi.core.sql.annotations.modifier;
 
 import es.degrassi.core.sql.DataType;
 import es.degrassi.core.sql.KeyType;
@@ -11,22 +11,14 @@ import java.lang.annotation.Target;
 @SuppressWarnings("unused")
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.RECORD_COMPONENT})
+@Target({ ElementType.FIELD, ElementType.RECORD_COMPONENT})
 @IncompatibleModifiers(modifier = { Modifier.STATIC })
-public @interface AutoIncrement {
+public @interface ForeingKey {
+  String table();
+  String columnName();
   KeyType[] keyTypes = new KeyType[] {
-    KeyType.AUTOINCREMENT
+    KeyType.FOREING_KEY,
+    KeyType.REFERENCES
   };
-  DataType[] dataTypes = new DataType[] {
-    DataType.INT,
-    DataType.SMALLINT,
-    DataType.LONGDECIMAL,
-    DataType.MEDIUMDECIMAL,
-    DataType.TINYDECIMAL,
-    DataType.LONGINT,
-    DataType.MEDIUMINT,
-    DataType.TINYINT,
-    DataType.DECIMAL,
-    DataType.FLOAT
-  };
+  DataType[] dataTypes = DataType.values();
 }
