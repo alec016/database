@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id "io.freefair.lombok" version "8.6"
+    id "maven-publish"
 }
 
 group = project.maven_group
@@ -14,7 +15,25 @@ repositories {
 dependencies {
     compileOnly "org.projectlombok:lombok:${project.lombok_version}"
     annotationProcessor "org.projectlombok:lombok:${project.lombok_version}"
-    implementation 'com.mysql:mysql-connector-j:8.1.0'
+    implementation 'com.mysql:mysql-connector-j:9.0.0'
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'org.mongodb:mongodb-driver-sync:5.1.4'
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/alec016/database")
+            credentials {
+                username = project.findProperty("ghp.user") ?: System.getenv("MAVEN_USERNAME")
+                password = project.findProperty("ghp.key") ?: System.getenv("MAVEN_TOKEN")
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
 }

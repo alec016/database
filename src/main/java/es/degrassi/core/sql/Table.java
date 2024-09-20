@@ -31,7 +31,7 @@ public record Table(HashMap<String, List<String>> cols, String tableName) {
     Database.instance.close();
     return false;
   }
-  public boolean insertWithQuery(Query query) throws InvalidStateException, SQLException {
+  public boolean executeQuery(Query query) throws InvalidStateException, SQLException {
     Database.instance.init();
     if (Database.instance.getManager() instanceof SQLManager manager) {
       boolean success = !manager.getConnection().prepareStatement(query.build()).execute();
