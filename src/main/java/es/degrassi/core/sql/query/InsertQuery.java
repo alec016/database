@@ -20,6 +20,12 @@ public class InsertQuery {
     return this;
   }
 
+  public InsertQuery table(Class<?> table) throws InvalidStateException {
+    if (table == null || table.getAnnotation(es.degrassi.core.sql.annotations.modifier.Table.class) == null) throw new InvalidStateException("Table name can not be null or empty");
+    query.query.add(Database.instance.getDbName() + "." + table.getAnnotation(es.degrassi.core.sql.annotations.modifier.Table.class));
+    return this;
+  }
+
   public InsertQuery columns(String...columns) throws InvalidStateException {
     if (columns.length == 0) throw new InvalidStateException("Columns can not be empty");
     StringJoiner joiner = new StringJoiner(", ");

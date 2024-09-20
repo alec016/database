@@ -182,7 +182,6 @@ public class Database {
     );
 
     db.get(Database.class).ifPresent(table -> {
-
       System.out.println("======================================================================================================");
       System.out.println("Selecting data...");
       try {
@@ -191,7 +190,7 @@ public class Database {
           .select()
           .all()
           .from()
-          .table(db.getClass().getAnnotation(es.degrassi.core.sql.annotations.modifier.Table.class).value())
+          .table(db.getClass())
           .where()
           .create()
           .firstMember("port")
@@ -216,7 +215,7 @@ public class Database {
         Query query = db.getManager()
           .query()
           .insert()
-          .table(db.getClass().getAnnotation(es.degrassi.core.sql.annotations.modifier.Table.class).value())
+          .table(db.getClass())
           .columns(table.prepareColsForInsert())
           .values(table.prepareValues(db));
         System.out.println(query.build());
