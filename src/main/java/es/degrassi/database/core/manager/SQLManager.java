@@ -69,7 +69,6 @@ public class SQLManager extends ManagerAPI {
     database.addEntry(entry, table);
 
     try {
-      System.out.println(table.prepareCreationIfNotExistsStatement(database.getDbName()));
       table.createIfNotExists(database.getDbName());
       System.out.println("Table " + table.tableName() + " created successfully");
     } catch (SQLException | InvalidStateException exception) {

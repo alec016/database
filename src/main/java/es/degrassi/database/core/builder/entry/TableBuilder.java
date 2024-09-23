@@ -157,21 +157,6 @@ public class TableBuilder extends EntryBuilder {
         else if (annotation instanceof Varchar a) modifiers.add(a.toString.replace("%s%", a.value() + ""));
       });
     if (columnType.get() == null || modifiers.isEmpty()) return this;
-//    DataType dataType = DataType.fromClass(field.getType());
-//    if (dataType == null) return this;
-//    if (dataType.isVarchar())
-//      modifiers.add(dataType.name() + "(100)");
-//    else if (dataType.isEnum() && field.getType().isEnum()) {
-//      String values = Arrays
-//        .stream((java.lang.Enum<?>[]) field.getType().getEnumConstants())
-//        .map(java.lang.Enum::name)
-//        .map(name -> "\"" + name + "\"")
-//        .toList()
-//        .toString()
-//        .replaceAll("[\\[\\]]", "");
-//      modifiers.add(dataType.name() + "(" + values + ")");
-//    } else
-//      modifiers.add(dataType.name());
     for (Annotation annotation : field.getAnnotations()) {
       if (annotation instanceof AutoIncrement) {
         if (Arrays.stream(AutoIncrement.dataTypes).noneMatch(type -> DataType.fromClass(field.getType()).equals(type)))
@@ -186,7 +171,9 @@ public class TableBuilder extends EntryBuilder {
       } else if (annotation instanceof Unique) {
         modifiers.addAll(modifiers(Unique.keyTypes));
       } else if (annotation instanceof ForeingKey fk) {
-        modifiers.addAll(modifiers(ForeingKey.keyTypes));
+        modifiers.add(KeyType.FOREING_KEY.getName());
+        modifiers.add("(" + field.getAnnotation(Column.class).value() + ")");
+        modifiers.add(KeyType.REFERENCES.getName());
         modifiers.add(fk.table() + "(" + fk.columnName() + ")");
         modifiers.add("ON DELETE CASCADE");
         modifiers.add("ON UPDATE CASCADE");
