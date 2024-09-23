@@ -188,6 +188,8 @@ public class TableBuilder extends EntryBuilder {
       } else if (annotation instanceof ForeingKey fk) {
         modifiers.addAll(modifiers(ForeingKey.keyTypes));
         modifiers.add(fk.table() + "(" + fk.columnName() + ")");
+        modifiers.add("ON DELETE CASCADE");
+        modifiers.add("ON UPDATE CASCADE");
       } else if (annotation instanceof Default df) {
         modifiers.addAll(modifiers(Default.keyTypes));
         if (ColumnType.mustBeQuotated(columnType.get().annotationType())) {
