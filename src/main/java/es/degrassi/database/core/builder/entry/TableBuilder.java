@@ -40,12 +40,14 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings("unused")
 public class TableBuilder extends EntryBuilder {
   private final HashMap<String, List<String>> cols = new LinkedHashMap<>();
+  private final List<String> foreignKeys = new LinkedList<>();
   private String tableName;
 
   public static TableBuilder fromClass(Class<?> clazz) throws InvalidDataTypeException, InvalidKeyException {
@@ -171,12 +173,14 @@ public class TableBuilder extends EntryBuilder {
       } else if (annotation instanceof Unique) {
         modifiers.addAll(modifiers(Unique.keyTypes));
       } else if (annotation instanceof ForeingKey fk) {
-        modifiers.add(KeyType.FOREING_KEY.getName());
-        modifiers.add("(" + field.getAnnotation(Column.class).value() + ")");
-        modifiers.add(KeyType.REFERENCES.getName());
-        modifiers.add(fk.table() + "(" + fk.columnName() + ")");
-        modifiers.add("ON DELETE CASCADE");
-        modifiers.add("ON UPDATE CASCADE");
+        StringJoiner joiner = new StringJoiner(" ");
+        joiner.add(KeyType.FOREING_KEY.getName());
+        joiner.add("(" + field.getAnnotation(Column.class).value() + ")");
+        joiner.add(KeyType.REFERENCES.getName());
+        joiner.add(fk.table() + "(" + fk.columnName() + ")");
+        joiner.add("ON DELETE CASCADE");
+        joiner.add("ON UPDATE CASCADE");
+        foreignKeys.add(joiner.toString());
       } else if (annotation instanceof Default df) {
         modifiers.addAll(modifiers(Default.keyTypes));
         if (ColumnType.mustBeQuotated(columnType.get().annotationType())) {
@@ -265,6 +269,10 @@ public class TableBuilder extends EntryBuilder {
     if (cols.isEmpty()) throw new InvalidStateException("Columns can not be empty");
     if (cols.values().stream().noneMatch(value -> value.contains(KeyType.PRIMARY_KEY.getName()))) throw new InvalidStateException("One column must be Primary Key");
     if (cols.values().stream().filter(value -> value.contains(KeyType.PRIMARY_KEY.getName())).toList().size() > 1) throw new InvalidStateException("Only one column can be Primary Key");
+    StringJoiner joiner = new StringJoiner(", ");
+    foreignKeys.forEach(joiner::add);
+    cols.put("", List.of(joiner.toString()));
+
     return new Table(cols, tableName);
   }
 }

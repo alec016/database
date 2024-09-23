@@ -245,7 +245,7 @@ public record Table(HashMap<String, List<String>> cols, String tableName) {
       List<String> type = entry.getValue();
       StringJoiner joiner = new StringJoiner(" ");
       type.forEach(joiner::add);
-      return name + " " + joiner;
+      return name.isEmpty() ? joiner.toString() : name + " " + joiner;
     }).forEach(j::add);
     builder.append(j);
     return builder.toString();
