@@ -275,6 +275,8 @@ public class TableBuilder extends EntryBuilder {
     StringJoiner pkJoiner = new StringJoiner(", ");
     primaryKeys.forEach(pkJoiner::add);
     joiner.add(
+      KeyType.CONSTRAINT + " " +
+      "PK_" + tableName + " " +
       KeyType.PRIMARY_KEY + "(" +
       pkJoiner +
       ")"
