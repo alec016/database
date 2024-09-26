@@ -269,8 +269,7 @@ public class TableBuilder extends EntryBuilder {
   public Table build() throws InvalidStateException {
     if (tableName == null || tableName.isEmpty()) throw new InvalidStateException("Table name can not be null or empty");
     if (cols.isEmpty()) throw new InvalidStateException("Columns can not be empty");
-    if (cols.values().stream().noneMatch(value -> value.contains(KeyType.PRIMARY_KEY.getName()))) throw new InvalidStateException("One column must be Primary Key");
-    if (cols.values().stream().filter(value -> value.contains(KeyType.PRIMARY_KEY.getName())).toList().size() > 1) throw new InvalidStateException("Only one column can be Primary Key");
+//    if (cols.values().stream().filter(value -> value.contains(KeyType.PRIMARY_KEY.getName())).toList().size() > 1) throw new InvalidStateException("Only one column can be Primary Key");
     StringJoiner joiner = new StringJoiner(", ");
     foreignKeys.forEach(joiner::add);
     StringJoiner pkJoiner = new StringJoiner(", ");
@@ -282,6 +281,7 @@ public class TableBuilder extends EntryBuilder {
     );
     cols.put("", List.of(joiner.toString()));
 
+    if (cols.values().stream().noneMatch(value -> value.contains(KeyType.PRIMARY_KEY.getName()))) throw new InvalidStateException("One column must be Primary Key");
     return new Table(cols, tableName);
   }
 }
