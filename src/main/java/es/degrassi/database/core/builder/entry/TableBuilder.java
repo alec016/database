@@ -275,11 +275,11 @@ public class TableBuilder extends EntryBuilder {
     StringJoiner pkJoiner = new StringJoiner(", ");
     primaryKeys.forEach(pkJoiner::add);
     joiner.add(
-      KeyType.CONSTRAINT + " " +
-      "PK_" + tableName + " " +
-      KeyType.PRIMARY_KEY + "(" +
-      pkJoiner +
-      ")"
+      KeyType.CONSTRAINT.getName() + " " +
+        "PK_" + tableName + " " +
+        KeyType.PRIMARY_KEY.getName() + "(" +
+        pkJoiner +
+        ")"
     );
     cols.put("", List.of(joiner.toString()));
 
